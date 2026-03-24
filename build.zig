@@ -83,6 +83,14 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
+    // CPU Cache Line Option
+    const cache_line = b.option(usize, "cache-line", "Cache Line Size");
+
+    const options = b.addOptions();
+    options.addOption(?usize, "cache_line", cache_line);
+
+    exe.root_module.addOptions("config", options);
+
     // This declares intent for the executable to be installed into the
     // install prefix when running `zig build` (i.e. when executing the default
     // step). By default the install prefix is `zig-out/` but can be overridden

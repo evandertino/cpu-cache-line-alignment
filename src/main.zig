@@ -1,7 +1,27 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const Io = std.Io;
 
 const _09_03_alignment = @import("_09_03_alignment");
+const config = @import("config");
+
+pub const CACHE_LINE_SIZE_OVERRIDE: ?usize =
+    if (@hasDecl(config, "cache_line"))
+        config.cache_line
+    else
+        null;
+
+pub const CACHE_LINE_SIZE: usize = CACHE_LINE_SIZE_OVERRIDE orelse switch (builtin.cpu.arch) {
+    .aarch64 => 128,
+    else => 64,
+};
+
+// Validate
+comptime {
+    if (CACHE_LINE_SIZE != 64 and CACHE_LINE_SIZE != 128) {
+        @compileError("CACHE_LINE_SIZE must be 64 or 128 bytes.");
+    }
+}
 
 pub fn main(init: std.process.Init) !void {
     // Prints to stderr, unbuffered, ignoring potential errors.
@@ -29,6 +49,26 @@ pub fn main(init: std.process.Init) !void {
     try _09_03_alignment.printAnotherMessage(stdout_writer);
 
     try stdout_writer.flush(); // Don't forget to flush!
+
+    // Gets the cache_line from config
+    try stdout_writer.print("\nCache Line Override: {?}\n", .{CACHE_LINE_SIZE_OVERRIDE});
+    try stdout_writer.print("Cache Line: {}\n\n", .{CACHE_LINE_SIZE});
+    try stdout_writer.flush();
+
+    // Each entry occupies exactly one 64-byte cache line.
+    // Writes by different CPU cores do not cause false sharing.
+    const PerCoreCounter = extern struct {
+        value: u64,
+        //_pad: [56]u8, // explicit padding to reach Full Cache Line Size
+        _pad: [CACHE_LINE_SIZE - @sizeOf(u64)]u8,
+    };
+
+    comptime {
+        std.debug.assert(@sizeOf(PerCoreCounter) == CACHE_LINE_SIZE);
+    }
+
+    const counters: [128]PerCoreCounter align(CACHE_LINE_SIZE) = undefined;
+    _ = counters;
 }
 
 test "simple test" {
