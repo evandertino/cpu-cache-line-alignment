@@ -69,6 +69,39 @@ pub fn main(init: std.process.Init) !void {
 
     const counters: [128]PerCoreCounter align(CACHE_LINE_SIZE) = undefined;
     _ = counters;
+
+    // Delegating the creation to a function
+    const AnyCoreCounter = CacheAlignedWithPadding(u32);
+
+    comptime {
+        std.debug.assert(@sizeOf(AnyCoreCounter) == CACHE_LINE_SIZE);
+    }
+
+    const any_counters: [128]AnyCoreCounter align(CACHE_LINE_SIZE) = undefined;
+    _ = any_counters;
+
+    // Another delegation
+    const MyCoreCounter = CacheAligned(u64);
+
+    comptime {
+        std.debug.assert(@sizeOf(MyCoreCounter) == CACHE_LINE_SIZE);
+    }
+
+    const my_counters: [128]MyCoreCounter align(CACHE_LINE_SIZE) = undefined;
+    _ = my_counters;
+}
+
+pub fn CacheAlignedWithPadding(comptime T: type) type {
+    return extern struct {
+        value: T,
+        _pad: [CACHE_LINE_SIZE - @sizeOf(T)]u8,
+    };
+}
+
+pub fn CacheAligned(comptime T: type) type {
+    return extern struct {
+        value: T align(CACHE_LINE_SIZE),
+    };
 }
 
 test "simple test" {
