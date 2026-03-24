@@ -4,6 +4,7 @@ const Io = std.Io;
 
 const _09_03_alignment = @import("_09_03_alignment");
 const config = @import("config");
+const assert = std.debug.assert;
 
 pub const CACHE_LINE_SIZE_OVERRIDE: ?usize =
     if (@hasDecl(config, "cache_line"))
@@ -64,7 +65,7 @@ pub fn main(init: std.process.Init) !void {
     };
 
     comptime {
-        std.debug.assert(@sizeOf(PerCoreCounter) == CACHE_LINE_SIZE);
+        assert(@sizeOf(PerCoreCounter) == CACHE_LINE_SIZE);
     }
 
     const counters: [128]PerCoreCounter align(CACHE_LINE_SIZE) = undefined;
@@ -74,7 +75,7 @@ pub fn main(init: std.process.Init) !void {
     const AnyCoreCounter = CacheAlignedWithPadding(u32);
 
     comptime {
-        std.debug.assert(@sizeOf(AnyCoreCounter) == CACHE_LINE_SIZE);
+        assert(@sizeOf(AnyCoreCounter) == CACHE_LINE_SIZE);
     }
 
     const any_counters: [128]AnyCoreCounter align(CACHE_LINE_SIZE) = undefined;
@@ -84,7 +85,7 @@ pub fn main(init: std.process.Init) !void {
     const MyCoreCounter = CacheAligned(u64);
 
     comptime {
-        std.debug.assert(@sizeOf(MyCoreCounter) == CACHE_LINE_SIZE);
+        assert(@sizeOf(MyCoreCounter) == CACHE_LINE_SIZE);
     }
 
     const my_counters: [128]MyCoreCounter align(CACHE_LINE_SIZE) = undefined;
